@@ -52,8 +52,9 @@ o fluxo OAuth — apenas não gasta uma semana descobrindo onde se registra o cl
 
 ### 2. `seed/` — o gerador de dados
 
-Script que fala com a API REST do GLPI para criar categorias, usuários,
-chamados, timelines e artigos de KB.
+Script em **Node/TypeScript** (alinhado ao stack que o autor já usa no ChipDash;
+a liberdade de linguagem vale para o aluno, não para o kit) que fala com a API
+REST do GLPI para criar categorias, usuários, chamados, timelines e artigos de KB.
 
 Executado **pelo autor, uma vez**, contra um GLPI limpo; o resultado é
 congelado via `mysqldump` em `lab/seed.sql`, que é o artefato versionado.
@@ -75,7 +76,9 @@ Duas propriedades obrigatórias:
 
 ### 3. `docs/` — o enunciado
 
-Requisitos, sprints, rubrica, perguntas de referência para a demo, e uma
+Requisitos, sprints, rubrica, um conjunto de ~20 perguntas de referência para a
+demo (cobrindo os quatro tipos de capacidade, incluindo casos que a KB
+deliberadamente não responde), e uma
 **coleção de requisições HTTP** (formato `.http`, que roda em VS Code, Bruno e
 IntelliJ) demonstrando autenticação OAuth e as leituras básicas de KB e chamados.
 
