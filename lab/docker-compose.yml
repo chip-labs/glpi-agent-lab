@@ -1,0 +1,35 @@
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: glpi
+      MARIADB_USER: glpi
+      MARIADB_PASSWORD: glpi
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  glpi:
+    build:
+      context: .
+      args:
+        GLPI_VERSION: ${GLPI_VERSION:-11.0.8}
+    ports:
+      - "${GLPI_PORT:-8080}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - glpi-files:/var/www/glpi/files
+
+volumes:
+  db-data:
+  glpi-files:
