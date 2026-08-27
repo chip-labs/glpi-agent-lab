@@ -3,3 +3,4 @@ lab/.env
 *.log
 .DS_Store
 docs/superpowers/
+.superpowers/
