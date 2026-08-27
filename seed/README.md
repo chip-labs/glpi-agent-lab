@@ -19,7 +19,7 @@ mv seed.sql seed.sql.bak   # esvazia o caminho montado sem editar o compose
 touch seed.sql
 docker compose down -v && docker compose up -d --build
 
-# instalar o banco do zero (mesmo comando do Step 6 da Task 1)
+# instalar o banco do zero
 docker compose exec -u www-data glpi php bin/console database:install \
   --db-host=db --db-name=glpi --db-user=glpi --db-password=glpi \
   --default-language=pt_BR --no-interaction
@@ -73,11 +73,10 @@ do próprio bind mount para o mesmo caminho host).
   nunca absolutas — do contrário as perguntas temporais do enunciado quebram
   em semestres futuros.
 - **Sem dado real.** Todo o conteúdo é inventado.
-- **Rotas da API v2:** ver
-  `.superpowers/sdd/2026-08-26-glpi-agent-lab/correcoes-para-task-7.md` —
-  a base de conhecimento é `/Knowledgebase/Article` (campo `content`, não
-  `answer`), a categoria de chamado é `/Dropdowns/ITILCategory`, o usuário é
-  criado com o campo `username` (não `name`), e o vínculo com o chamado
-  (categoria, solicitante, técnico) usa os formatos confirmados ao vivo:
-  `category: {id}` (objeto, não `itilcategories_id`) e `TeamMember` com
-  `role: "requester"`/`"assigned"`.
+- **Rotas da API v2 confirmadas ao vivo:** a base de conhecimento é
+  `/Knowledgebase/Article` (campo `content`, não `answer`), a categoria de
+  chamado é `/Dropdowns/ITILCategory`, o usuário é criado com o campo
+  `username` (não `name`), e o vínculo com o chamado (categoria, solicitante,
+  técnico) usa os formatos confirmados ao vivo: `category: {id}` (objeto, não
+  `itilcategories_id`) e `TeamMember` com `role: "requester"`/`"assigned"`.
+  Ver `docs/api-glpi-v2.md` para a documentação completa da API.
