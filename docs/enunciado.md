@@ -17,15 +17,16 @@ GLPI 11 de laboratório que já vem pronto e povoado.
 
     cd lab
     cp .env.example .env
-    docker compose up -d
+    docker compose up -d --build
 
 Em cerca de um minuto o GLPI responde em <http://localhost:8080>
 (usuário `glpi`, senha `glpi`). As credenciais da API já vêm prontas em
 `lab/oauth-client.md` — não é preciso rodar nenhum script de preparação.
 `docs/glpi.http` traz requisições prontas.
 
-**Estragou a base testando?** `docker compose down -v && docker compose up -d`
-devolve tudo ao estado original. Use sem medo.
+**Estragou a base testando?**
+`docker compose down -v && docker compose up -d --build` devolve tudo ao
+estado original. Use sem medo.
 
 ## Entregas
 
@@ -103,6 +104,13 @@ recuperação funciona — é o item de maior peso.
   cobre o conjunto inteiro. Trate qualquer 2xx como sucesso; não trave a
   lógica em um único código.
 - O token expira em **1 hora**. Implemente renovação cedo.
+- Não existe filtro por status ou categoria na API (`?filter=`, `?status=`
+  e variantes são ignorados ou dão erro, dependendo da sintaxe). Pagine a
+  coleção inteira e filtre/agregue no seu próprio código.
+- O campo **`date`** é a data real de abertura do chamado. `date_creation`
+  **não** serve para isso — reflete o momento em que o laboratório foi
+  gerado, e é igual (ou quase) para todos os chamados. Qualquer pergunta
+  sobre "quando" um chamado foi aberto usa `date`.
 - Para **ler** comentários e soluções, use `GET .../Timeline` — é lá que
   tudo aparece consolidado. Para **escrever** um acompanhamento (Sprint 4),
   o caminho é o sub-recurso `POST .../Timeline/Followup`; postar direto em

@@ -59,10 +59,17 @@ Authorization: Bearer {{bearer}}
 # parte — por isso a resposta esperada é 206 Partial Content, com o header
 # Content-Range indicando quanto falta (ex.: "0-9/300"). Trate qualquer
 # código 2xx como sucesso: 206 aqui é o comportamento normal, não um erro.
+# Não existe filtro por status/categoria nesta API: qualquer "?filter=" ou
+# "?status=" é ignorado (ou dá erro, com colchetes) e você recebe a
+# listagem inteira de qualquer forma — pagine tudo e filtre no seu código.
 GET {{base}}/api.php/v2/Assistance/Ticket?start=0&limit=10
 Authorization: Bearer {{bearer}}
 
 ### 4. Detalhe de um chamado
+# Repare nos dois campos de data: "date" é a data real de abertura do
+# chamado; "date_creation" é só o instante em que o registro foi gravado
+# no banco (no laboratório, o momento em que o seed rodou) e não serve
+# para nenhuma pergunta sobre "quando" o chamado foi aberto.
 GET {{base}}/api.php/v2/Assistance/Ticket/1
 Authorization: Bearer {{bearer}}
 
