@@ -75,4 +75,104 @@ describe('criarCliente', () => {
     expect(corpo).toEqual({ name: 'x' })
     expect(corpo.input).toBeUndefined()
   })
+
+  it('base terminando com barra não produz //api.php', async () => {
+    const buscar = vi
+      .fn()
+      .mockResolvedValueOnce(respostaToken())
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
+
+    const cliente = await criarCliente({
+      ...CONFIG_BASE,
+      base: 'http://lab:8080/',
+      buscar: buscar as unknown as typeof fetch,
+    })
+    await cliente.get('/Assistance/Ticket')
+
+    const [url] = buscar.mock.calls[1]!
+    expect(url).toBe('http://lab:8080/api.php/v2/Assistance/Ticket')
+  })
+
+  it('corpo de autenticação envia client_id, client_secret, username, password e scope', async () => {
+    const buscar = vi.fn().mockResolvedValueOnce(respostaToken())
+    await criarCliente({ ...CONFIG_BASE, buscar: buscar as unknown as typeof fetch })
+
+    const corpo = JSON.parse(buscar.mock.calls[0]![1].body)
+    expect(corpo.client_id).toBe('id')
+    expect(corpo.client_secret).toBe('segredo')
+    expect(corpo.username).toBe('glpi')
+    expect(corpo.password).toBe('glpi')
+    expect(corpo.scope).toBe('api')
+  })
+
+  it('401 numa chamada dispara renovação e a chamada é repetida com o token novo', async () => {
+    const buscar = vi
+      .fn()
+      .mockResolvedValueOnce(respostaToken()) // autenticação inicial
+      .mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 401 })) // primeiro GET retorna 401
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: 'TOK2', refresh_token: 'REF2', expires_in: 3600 }), {
+          status: 200,
+        }),
+      ) // renovação bem-sucedida
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 })) // GET repetido com token novo
+
+    const cliente = await criarCliente({ ...CONFIG_BASE, buscar: buscar as unknown as typeof fetch })
+    await cliente.get('/Assistance/Ticket')
+
+    // Verificar que a requisição repetida (4ª chamada) tem o token novo
+    const [, init4] = buscar.mock.calls[3]!
+    expect(init4.headers.Authorization).toBe('Bearer TOK2')
+  })
+
+  it('renovação usa grant_type refresh_token e envia o refresh_token recebido', async () => {
+    const buscar = vi
+      .fn()
+      .mockResolvedValueOnce(respostaToken()) // autenticação inicial com refresh_token: 'REF'
+      .mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 401 })) // GET retorna 401
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: 'TOK2', refresh_token: 'REF2', expires_in: 3600 }), {
+          status: 200,
+        }),
+      ) // renovação
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 })) // GET repetido
+
+    const cliente = await criarCliente({ ...CONFIG_BASE, buscar: buscar as unknown as typeof fetch })
+    await cliente.get('/Assistance/Ticket')
+
+    // Verificar que a chamada de renovação (3ª) usa refresh_token grant e envia o refresh_token original
+    const corpoRenovacao = JSON.parse(buscar.mock.calls[2]![1].body)
+    expect(corpoRenovacao.grant_type).toBe('refresh_token')
+    expect(corpoRenovacao.refresh_token).toBe('REF')
+  })
+
+  it('se a renovação falhar, o erro original da chamada é propagado', async () => {
+    const buscar = vi
+      .fn()
+      .mockResolvedValueOnce(respostaToken()) // autenticação inicial
+      .mockResolvedValueOnce(new Response('sessão expirada', { status: 401 })) // GET retorna 401
+      .mockResolvedValueOnce(new Response('credenciais inválidas', { status: 400 })) // renovação falha
+
+    const cliente = await criarCliente({ ...CONFIG_BASE, buscar: buscar as unknown as typeof fetch })
+    await expect(cliente.get('/Assistance/Ticket')).rejects.toThrow(/401.*sessão expirada/s)
+  })
+
+  it('401 na chamada repetida (após renovação bem-sucedida) propaga erro sem renovar de novo', async () => {
+    const buscar = vi
+      .fn()
+      .mockResolvedValueOnce(respostaToken()) // autenticação inicial
+      .mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 401 })) // GET retorna 401
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: 'TOK2', refresh_token: 'REF2', expires_in: 3600 }), {
+          status: 200,
+        }),
+      ) // renovação bem-sucedida
+      .mockResolvedValueOnce(new Response('ainda não autorizado', { status: 401 })) // GET repetido ainda falha com 401
+
+    const cliente = await criarCliente({ ...CONFIG_BASE, buscar: buscar as unknown as typeof fetch })
+    await expect(cliente.get('/Assistance/Ticket')).rejects.toThrow(/401.*ainda não autorizado/s)
+
+    // Verificar que não houve 5ª chamada (não tentou renovar de novo)
+    expect(buscar).toHaveBeenCalledTimes(4)
+  })
 })
