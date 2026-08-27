@@ -9,7 +9,9 @@
 # carregar o banco pronto. Até lá, o lab precisa se sustentar sozinho.
 set -euo pipefail
 
-cd "$(dirname "$0")/../lab"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+cd "$SCRIPT_DIR/../lab"
 
 GLPI_CID=$(docker compose ps -q glpi)
 if [ -z "$GLPI_CID" ]; then
@@ -17,6 +19,6 @@ if [ -z "$GLPI_CID" ]; then
   exit 1
 fi
 
-docker cp "$(dirname "$0")/preparar-oauth.php" "$GLPI_CID:/tmp/preparar-oauth.php"
+docker cp "$SCRIPT_DIR/preparar-oauth.php" "$GLPI_CID:/tmp/preparar-oauth.php"
 docker compose exec -u www-data -T glpi php /tmp/preparar-oauth.php
 docker compose exec -u www-data -T glpi php bin/console cache:clear
