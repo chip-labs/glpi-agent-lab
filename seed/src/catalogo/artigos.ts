@@ -157,8 +157,9 @@ seu cabo.</p>`,
 de internet.</p>
 <h3>Teste rápido</h3>
 <p>Tente abrir um site pelo endereço IP direto (peça um IP de teste ao suporte) ou execute
-<code>ping google.com</code> no terminal. Se o ping falhar mas <code>ping 8.8.8.8</code>
-funcionar, o problema é de resolução de nomes, não de conectividade.</p>
+<code>ping portal.exemplo.local</code> no terminal. Se o ping falhar mas
+<code>ping 10.20.0.1</code> (o IP do roteador interno) funcionar, o problema é de resolução
+de nomes, não de conectividade.</p>
 <h3>Correção</h3>
 <ul><li>No Windows, abra o Prompt de Comando como administrador e rode
 <code>ipconfig /flushdns</code>.</li>
