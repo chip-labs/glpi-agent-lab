@@ -1,7 +1,9 @@
 # Cliente OAuth do laboratório
 
-O cliente já é criado automaticamente pela seed do banco (Task 7). Não é
-preciso cadastrar nada no GLPI.
+Até a Task 7 existir (que vai congelar tudo isso num `seed.sql`), rode
+`scripts/preparar-oauth.sh` uma vez depois do `database:install` — ele
+habilita a API v2 e cria o cliente abaixo, com essas credenciais fixas. É
+idempotente: pode rodar de novo sem duplicar nada.
 
 - **client_id:** `92e1a8497a5136e410301a573b8282bb`
 - **client_secret:** `156df3c0f488cd8be63a5ee3731568da3afa60239bed1018c8cec9f4c5355c17`
@@ -20,21 +22,21 @@ máquina vale mais que o sigilo aqui. Sem essa chave fixada, o secret gravado
 no `seed.sql` (Task 7) seria indecifrável em qualquer container novo — ver
 `.superpowers/sdd/2026-08-26-glpi-agent-lab/descoberta-glpicrypt.md`.
 
-## Passo obrigatório: habilitar a API v2 (High-Level API)
+## Por que existe um script em vez de só este arquivo
 
 Descoberta feita ao vivo na Task 2: uma instalação nova do GLPI 11.0.8 tem a
-API v2 **desligada por padrão**. Sem isso, toda chamada em `/api.php/v2/...`
-volta `403` com `"detail":"The High-Level API is disabled"`, mesmo com um
-token válido. É preciso habilitar duas chaves em `glpi_configs` (contexto
-`core`) antes de usar a API:
+API v2 **desligada por padrão**. Sem habilitá-la, toda chamada em
+`/api.php/v2/...` volta `403` com `"detail":"The High-Level API is
+disabled"`, mesmo com um token válido. E criar o cliente OAuth com uma
+interface (web ou `OAuthClient::add()`) sempre gera um `identifier`/`secret`
+aleatórios, ignorando qualquer valor fornecido — não dá para fixar as
+credenciais por esse caminho.
 
-```sql
-UPDATE glpi_configs SET value='1' WHERE context='core' AND name IN ('enable_api', 'enable_hlapi');
-```
-
-A Task 7 deve incluir isso no `seed.sql`. Depois de alterar, é preciso limpar
-o cache do GLPI (`php bin/console cache:clear`), senão o valor antigo
-continua em uso.
+`scripts/preparar-oauth.sh` resolve os dois problemas: liga
+`enable_api`/`enable_hlapi` em `glpi_configs` (contexto `core`), limpa o
+cache do GLPI, e insere o cliente direto no banco com o secret já
+criptografado com a chave fixa (`lab/glpicrypt.key`) — as mesmas credenciais
+declaradas acima. A Task 7 deve absorver essa mesma lógica no `seed.sql`.
 
 ## Obtendo um token
 

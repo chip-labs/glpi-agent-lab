@@ -12,8 +12,9 @@ padrão**. Toda chamada em `/api.php/v2/...` retorna `403` com
 `"detail":"The High-Level API is disabled"`, mesmo com um token válido, até
 que as chaves `enable_api` e `enable_hlapi` sejam ligadas em
 `glpi_configs` (contexto `core`) e o cache seja limpo
-(`php bin/console cache:clear`). Isso já vem resolvido no lab do laboratório;
-é só um lembrete caso você reinstale o GLPI do zero.
+(`php bin/console cache:clear`). No lab, isso é feito por
+`scripts/preparar-oauth.sh` — rode-o uma vez depois do `database:install`
+(ver `lab/oauth-client.md`).
 
 ## Autenticação (OAuth2)
 
@@ -28,17 +29,25 @@ as demais chamadas levam o header `Authorization: Bearer <access_token>`.
 As credenciais estão em `lab/oauth-client.md`. O token expira em 1 hora —
 seu agente precisa renovar (mesmo endpoint, `grant_type: refresh_token`).
 
-O swagger completo (schema OpenAPI) fica em `GET /api.php/v2/doc.json` — mas
-também exige um Bearer válido e a API habilitada, não é público.
+O swagger completo (schema OpenAPI) fica em `GET /api.php/v2/doc.json` — é
+**público**: responde `200` com o schema inteiro (1219 rotas) sem nenhum
+header `Authorization`, testado tanto de fora do container quanto de dentro
+dele. Ainda assim precisa da API habilitada (ver seção acima).
 
 ## Armadilhas que custam horas
 
-- **Listagens**: nesta instância (GLPI 11.0.8), listagens retornam **HTTP
-  200** com o header `Content-Range: <inicio>-<fim>/<total>`, não 206 como
-  registrado em notas de outra instância. De qualquer forma, trate qualquer
-  código 200–299 como sucesso — não dependa do código exato.
-- **Paginação** por `?range=0-199` (não testado ao vivo nesta task — apenas
-  o `Content-Range` de resposta foi confirmado).
+- **Paginação** é por `?start=N&limit=M` (não `?range=0-199` como em notas
+  de outra instância — esse parâmetro é ignorado). Confirmado ao vivo: sem
+  `start`/`limit`, ou com `limit` igual ou maior que o total de registros, a
+  listagem retorna **HTTP 200** com o corpo completo. Com `start`/`limit`
+  cobrindo só uma fatia de uma coleção maior (testado com 30 chamados
+  descartáveis e `?start=0&limit=10`), a mesma rota retorna **HTTP 206
+  Partial Content**. Ou seja: as notas de outra instância sobre "listagens
+  retornam 206" só valem quando a resposta é de fato parcial — uma base
+  vazia ou uma página que cobre tudo retorna 200. Em ambos os casos o header
+  `Content-Range: <inicio>-<fim>/<total>` vem presente. **Trate qualquer
+  código 200–299 como sucesso** — é a regra que cobre os dois casos e não
+  quebra quando a base cresce.
 - A API legada `/apirest.php` **não existe** nesta instalação (não há
   `apirest.php` nem `api.php` como arquivo físico em `public/`; tudo é
   roteado via `index.php`/Symfony). Não use.
