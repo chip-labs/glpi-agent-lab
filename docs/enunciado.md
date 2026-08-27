@@ -103,7 +103,10 @@ recuperação funciona — é o item de maior peso.
   cobre o conjunto inteiro. Trate qualquer 2xx como sucesso; não trave a
   lógica em um único código.
 - O token expira em **1 hora**. Implemente renovação cedo.
-- Comentários e soluções vêm pelo **Timeline**, não por `/Followup`.
+- Para **ler** comentários e soluções, use `GET .../Timeline` — é lá que
+  tudo aparece consolidado. Para **escrever** um acompanhamento (Sprint 4),
+  o caminho é o sub-recurso `POST .../Timeline/Followup`; postar direto em
+  `/Timeline` não funciona, esse endpoint é só de leitura.
 - O conteúdo dos artigos da base de conhecimento fica no campo **`content`**
   (endpoint `/api.php/v2/Knowledgebase/Article`) e é **HTML**. Converta para
   texto antes de indexar.
