@@ -11,7 +11,16 @@ export interface ConfigCliente {
 export interface Cliente {
   get<T>(caminho: string): Promise<T>
   post<T>(caminho: string, corpo: unknown): Promise<T>
+  patch<T>(caminho: string, corpo: unknown): Promise<T>
 }
+
+// Observado ao vivo sob carga (Task 7, ~1800 requisições): sem "Connection:
+// close", o pool de keep-alive do fetch (undici) ocasionalmente reutiliza
+// uma conexão que o Apache do lab já está fechando, e a resposta chega com
+// status 2xx correto mas corpo vazio — a escrita no GLPI aconteceu, só a
+// resposta que se perdeu. Forçar conexão nova por requisição elimina a
+// corrida; o custo de latência é desprezível no volume deste gerador.
+const CABECALHOS_SEM_AUTH = { 'Content-Type': 'application/json', Connection: 'close' } as const
 
 export async function criarCliente(config: ConfigCliente): Promise<Cliente> {
   const buscar = config.buscar ?? fetch
@@ -19,7 +28,7 @@ export async function criarCliente(config: ConfigCliente): Promise<Cliente> {
 
   const resposta = await buscar(`${raiz}/api.php/token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: CABECALHOS_SEM_AUTH,
     body: JSON.stringify({
       grant_type: 'password',
       client_id: config.clientId,
@@ -40,7 +49,7 @@ export async function criarCliente(config: ConfigCliente): Promise<Cliente> {
   async function renovarToken(): Promise<void> {
     const r = await buscar(`${raiz}/api.php/token`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: CABECALHOS_SEM_AUTH,
       body: JSON.stringify({
         grant_type: 'refresh_token',
         client_id: config.clientId,
@@ -57,12 +66,26 @@ export async function criarCliente(config: ConfigCliente): Promise<Cliente> {
     refreshToken = dados.refresh_token
   }
 
+  // Observado ao vivo sob carga (Task 7): a v2 ocasionalmente responde 2xx
+  // com corpo vazio em sub-recursos de escrita (ex.: TeamMember), mesmo
+  // quando a mesma chamada normalmente devolve {id, href}. Não é um erro —
+  // a regra do lab é tratar qualquer 2xx como sucesso — então o corpo vazio
+  // vira `undefined` em vez de estourar em JSON.parse.
+  async function corpoJson<T>(r: Response): Promise<T> {
+    const texto = await r.text()
+    if (texto.length === 0) {
+      return undefined as T
+    }
+    return JSON.parse(texto) as T
+  }
+
   async function chamar<T>(metodo: string, caminho: string, corpo?: unknown): Promise<T> {
     const r = await buscar(`${raiz}/api.php/v2${caminho}`, {
       method: metodo,
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
+        Connection: 'close',
       },
       ...(corpo === undefined ? {} : { body: JSON.stringify(corpo) }),
     })
@@ -90,6 +113,7 @@ export async function criarCliente(config: ConfigCliente): Promise<Cliente> {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
+            Connection: 'close',
           },
           ...(corpo === undefined ? {} : { body: JSON.stringify(corpo) }),
         })
@@ -97,16 +121,17 @@ export async function criarCliente(config: ConfigCliente): Promise<Cliente> {
         if (r2.status < 200 || r2.status > 299) {
           throw new Error(`${metodo} ${caminho} → ${r2.status} ${await r2.text()}`)
         }
-        return (await r2.json()) as T
+        return corpoJson<T>(r2)
       }
 
       throw erroOriginal
     }
-    return (await r.json()) as T
+    return corpoJson<T>(r)
   }
 
   return {
     get: (caminho) => chamar('GET', caminho),
     post: (caminho, corpo) => chamar('POST', caminho, corpo),
+    patch: (caminho, corpo) => chamar('PATCH', caminho, corpo),
   }
 }

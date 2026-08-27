@@ -50,6 +50,33 @@ describe('criarCliente', () => {
     await expect(cliente.get('/Assistance/Ticket')).resolves.toEqual([{ id: 1 }])
   })
 
+  it('2xx com corpo vazio não estoura — devolve undefined em vez de lançar', async () => {
+    // Observado ao vivo sob carga: a v2 às vezes responde 2xx com corpo
+    // vazio em sub-recursos de escrita (a escrita aconteceu; só a resposta
+    // que se perdeu). JSON.parse('') estouraria; a regra do lab é tratar
+    // qualquer 2xx como sucesso.
+    const buscar = vi
+      .fn()
+      .mockResolvedValueOnce(respostaToken())
+      .mockResolvedValueOnce(new Response('', { status: 201 }))
+
+    const cliente = await criarCliente({ ...CONFIG_BASE, buscar: buscar as unknown as typeof fetch })
+    await expect(cliente.post('/Assistance/Ticket/1/TeamMember', { type: 'User', id: 2 })).resolves.toBeUndefined()
+  })
+
+  it('cada chamada manda Connection: close, para evitar corrida de keep-alive', async () => {
+    const buscar = vi
+      .fn()
+      .mockResolvedValueOnce(respostaToken())
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
+
+    const cliente = await criarCliente({ ...CONFIG_BASE, buscar: buscar as unknown as typeof fetch })
+    await cliente.get('/Assistance/Ticket')
+
+    const [, init] = buscar.mock.calls[1]!
+    expect(init.headers.Connection).toBe('close')
+  })
+
   it('lança erro com corpo legível quando a resposta falha', async () => {
     const buscar = vi
       .fn()
@@ -74,6 +101,21 @@ describe('criarCliente', () => {
     const corpo = JSON.parse(buscar.mock.calls[1]![1].body)
     expect(corpo).toEqual({ name: 'x' })
     expect(corpo.input).toBeUndefined()
+  })
+
+  it('patch envia o método PATCH com o corpo achatado', async () => {
+    const buscar = vi
+      .fn()
+      .mockResolvedValueOnce(respostaToken())
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 9, status: 5 }), { status: 200 }))
+
+    const cliente = await criarCliente({ ...CONFIG_BASE, buscar: buscar as unknown as typeof fetch })
+    await cliente.patch('/Assistance/Ticket/9', { status: 5 })
+
+    const [url, init] = buscar.mock.calls[1]!
+    expect(url).toBe('http://lab:8080/api.php/v2/Assistance/Ticket/9')
+    expect(init.method).toBe('PATCH')
+    expect(JSON.parse(init.body)).toEqual({ status: 5 })
   })
 
   it('base terminando com barra não produz //api.php', async () => {
