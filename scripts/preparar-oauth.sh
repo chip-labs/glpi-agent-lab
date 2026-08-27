@@ -2,13 +2,11 @@
 # Habilita a API v2 e garante que o cliente OAuth do laboratório existe,
 # com as credenciais fixas documentadas em lab/oauth-client.md.
 #
-# Roda depois do `database:install` (ver lab/README ou o brief da Task 1).
-# É idempotente: pode rodar de novo sem duplicar o cliente.
-#
-# Papel pós-Task 7: o `lab/seed.sql` já carrega o cliente OAuth congelado —
-# o aluno nunca precisa rodar este script. Ele continua existindo só para
-# quem for regenerar o corpus (ver seed/README.md): depois de um
+# O `lab/seed.sql` já carrega o cliente OAuth congelado — quem só quer usar
+# o laboratório nunca precisa rodar este script. Ele existe só para quem for
+# regenerar o corpus (ver seed/README.md): rode-o depois de um
 # `database:install` contra um banco vazio, antes de rodar `npm run gerar`.
+# É idempotente: pode rodar de novo sem duplicar o cliente.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

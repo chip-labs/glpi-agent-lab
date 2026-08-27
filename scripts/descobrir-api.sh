@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Lista as rotas da API v2 desta instância, a partir do swagger real.
 #
-# Descoberto na Task 2, ao vivo contra o lab local (GLPI 11.0.8):
+# Descoberto ao vivo contra o lab local (GLPI 11.0.8):
 #   - O swagger só tem conteúdo em /api.php/v2/doc.json (não em
 #     /api.php/v2.3.0/doc.json nem /api.php/doc.json).
 #   - O endpoint é público — responde sem header Authorization, testado
