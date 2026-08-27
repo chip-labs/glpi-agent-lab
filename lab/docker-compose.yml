@@ -1,6 +1,9 @@
 services:
   db:
-    image: mariadb:10.11
+    # Imagem fixada por digest, não só por tag — mesma razão da imagem base
+    # do GLPI no Dockerfile: uma tag móvel pode mudar no meio do semestre e
+    # produzir ambientes divergentes entre turmas.
+    image: mariadb@sha256:de61fed4a40d3842f3ee09944ba52792156cfd9adf489b2cc670fc6ded28df8d
     environment:
       MARIADB_ROOT_PASSWORD: root
       MARIADB_DATABASE: glpi
