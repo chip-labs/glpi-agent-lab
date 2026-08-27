@@ -5,8 +5,10 @@
 # Roda depois do `database:install` (ver lab/README ou o brief da Task 1).
 # É idempotente: pode rodar de novo sem duplicar o cliente.
 #
-# Provisório: será substituído pelo `seed.sql` da Task 7, que já vai
-# carregar o banco pronto. Até lá, o lab precisa se sustentar sozinho.
+# Papel pós-Task 7: o `lab/seed.sql` já carrega o cliente OAuth congelado —
+# o aluno nunca precisa rodar este script. Ele continua existindo só para
+# quem for regenerar o corpus (ver seed/README.md): depois de um
+# `database:install` contra um banco vazio, antes de rodar `npm run gerar`.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

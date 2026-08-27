@@ -3,6 +3,8 @@
 set -euo pipefail
 
 BASE="${GLPI_BASE:-http://localhost:8080}"
+# Rota da base de conhecimento confirmada ao vivo (Task 2 / correções da Task 7).
+ROTA_KB="${ROTA_KB:-/Knowledgebase/Article}"
 falhas=0
 
 checar() {
@@ -27,6 +29,43 @@ if [ "$instalador" = "200" ]; then
   falhas=$((falhas + 1))
 else
   echo "  ok   instalador não está exposto"
+fi
+
+# --- corpus ---
+# Paginação da v2 é por start/limit, não range (confirmado ao vivo — ver
+# correcoes-para-task-7.md). Uma página que cobre tudo devolve 200; uma
+# fatia parcial devolve 206. Ambos são sucesso.
+TOKEN=$(curl -s -X POST "$BASE/api.php/token" \
+  -H 'Content-Type: application/json' \
+  -d "{\"grant_type\":\"password\",\"client_id\":\"${CLIENT_ID:?defina CLIENT_ID}\",\"client_secret\":\"${CLIENT_SECRET:?defina CLIENT_SECRET}\",\"username\":\"glpi\",\"password\":\"glpi\",\"scope\":\"api\"}" \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin).get("access_token",""))' 2>/dev/null || echo "")
+
+if [ -z "$TOKEN" ]; then
+  echo "  FALHA não consegui obter token OAuth"
+  falhas=$((falhas + 1))
+else
+  echo "  ok   token OAuth obtido"
+
+  contar() {
+    curl -s "$BASE/api.php/v2$1?start=0&limit=999" -H "Authorization: Bearer $TOKEN" \
+      | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d) if isinstance(d,list) else 0)'
+  }
+
+  tickets=$(contar /Assistance/Ticket)
+  if [ "$tickets" -ge 250 ]; then
+    echo "  ok   chamados no corpus: $tickets"
+  else
+    echo "  FALHA poucos chamados: $tickets (esperado >= 250)"
+    falhas=$((falhas + 1))
+  fi
+
+  artigos=$(contar "$ROTA_KB")
+  if [ "$artigos" -ge 40 ]; then
+    echo "  ok   artigos de KB: $artigos"
+  else
+    echo "  FALHA poucos artigos de KB: $artigos (esperado >= 40)"
+    falhas=$((falhas + 1))
+  fi
 fi
 
 if [ "$falhas" -ne 0 ]; then
