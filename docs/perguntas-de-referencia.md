@@ -27,7 +27,7 @@ ou escolher com critério, não sortear.
 9. Qual categoria concentra mais chamados?
 10. Quantos chamados de rede foram abertos nos últimos 60 dias?
 11. Qual o status do chamado 42?
-12. Quem é o técnico responsável pelo chamado 100?
+12. Quem é o técnico responsável pelo chamado 13?
 13. Quantos chamados o técnico com mais atribuições tem?
 
 ## D. Similaridade e sugestão

@@ -3,8 +3,13 @@
 set -euo pipefail
 
 BASE="${GLPI_BASE:-http://localhost:8080}"
-# Rota da base de conhecimento confirmada ao vivo (Task 2 / correções da Task 7).
+# Rota da base de conhecimento confirmada ao vivo.
 ROTA_KB="${ROTA_KB:-/Knowledgebase/Article}"
+# Credenciais fixas do cliente OAuth do laboratório (ver lab/oauth-client.md)
+# — são públicas de propósito, então servem como padrão. Pode sobrescrever
+# via variável de ambiente se estiver usando outro cliente.
+CLIENT_ID="${CLIENT_ID:-92e1a8497a5136e410301a573b8282bb}"
+CLIENT_SECRET="${CLIENT_SECRET:-156df3c0f488cd8be63a5ee3731568da3afa60239bed1018c8cec9f4c5355c17}"
 falhas=0
 
 checar() {
@@ -32,12 +37,12 @@ else
 fi
 
 # --- corpus ---
-# Paginação da v2 é por start/limit, não range (confirmado ao vivo — ver
-# correcoes-para-task-7.md). Uma página que cobre tudo devolve 200; uma
-# fatia parcial devolve 206. Ambos são sucesso.
+# Paginação da v2 é por start/limit, não range (confirmado ao vivo). Uma
+# página que cobre tudo devolve 200; uma fatia parcial devolve 206. Ambos
+# são sucesso.
 TOKEN=$(curl -s -X POST "$BASE/api.php/token" \
   -H 'Content-Type: application/json' \
-  -d "{\"grant_type\":\"password\",\"client_id\":\"${CLIENT_ID:?defina CLIENT_ID}\",\"client_secret\":\"${CLIENT_SECRET:?defina CLIENT_SECRET}\",\"username\":\"glpi\",\"password\":\"glpi\",\"scope\":\"api\"}" \
+  -d "{\"grant_type\":\"password\",\"client_id\":\"${CLIENT_ID}\",\"client_secret\":\"${CLIENT_SECRET}\",\"username\":\"glpi\",\"password\":\"glpi\",\"scope\":\"api\"}" \
   | python3 -c 'import json,sys; print(json.load(sys.stdin).get("access_token",""))' 2>/dev/null || echo "")
 
 if [ -z "$TOKEN" ]; then
