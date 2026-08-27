@@ -93,4 +93,17 @@ describe('gerarChamados', () => {
       expect(c.prioridade).toBeLessThanOrEqual(5)
     }
   })
+
+  it('as descrições variam bastante — poucas repetições exatas de um mesmo texto', () => {
+    const contagem = new Map<string, number>()
+    for (const c of gerarChamados(opcoes())) {
+      contagem.set(c.descricao, (contagem.get(c.descricao) ?? 0) + 1)
+    }
+    const distintas = contagem.size
+    const repeticaoMaxima = Math.max(...contagem.values())
+    // Corpus sintético de similaridade: duplicatas exatas tornariam a busca
+    // por chamados parecidos trivial (similaridade 1.0 por string).
+    expect(distintas).toBeGreaterThan(100)
+    expect(repeticaoMaxima).toBeLessThanOrEqual(15)
+  })
 })
