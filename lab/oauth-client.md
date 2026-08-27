@@ -26,6 +26,12 @@ no `seed.sql` seria indecifrável em qualquer container novo — ver
 mesma razão, `lab/config_db.php`, `lab/oauth.pem` e `lab/oauth.pub` também
 são fixos e montados por bind mount — ver `seed/README.md`.
 
+**Atenção:** `lab/oauth.pem` é uma **chave privada** (assina os JWT do
+`/api.php/token`), não só "um par de chaves RSA" genérico. Ela está
+versionada aqui de propósito, porque é um laboratório local descartável com
+dados fictícios — isso não é prática aceitável fora deste contexto; num
+projeto real, chave privada nunca vai para o controle de versão.
+
 ## Por que existe um script em vez de só este arquivo
 
 Descoberta feita ao vivo na Task 2: uma instalação nova do GLPI 11.0.8 tem a

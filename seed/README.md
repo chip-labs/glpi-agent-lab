@@ -52,7 +52,14 @@ aparecer e `/api.php/token` para de funcionar. `config_db.php` é
 determinístico (mesmas credenciais fixas do `docker-compose.yml`, sem
 segredo nenhum). `oauth.pem`/`oauth.pub` são um par de chaves RSA sem
 relação com o conteúdo do banco — só precisam existir e ser consistentes
-entre si; se forem perdidos, regenere com
+entre si.
+
+**`oauth.pem` é uma chave privada** (o arquivo começa literalmente com
+`-----BEGIN PRIVATE KEY-----`) usada para assinar os JWT emitidos por
+`/api.php/token`. Ela está versionada neste repositório de propósito,
+porque este é um laboratório local descartável com dados fictícios — **isso
+não se faz num projeto real**: lá, chaves privadas nunca entram no
+controle de versão. Se forem perdidos, regenere com
 `php bin/console security:change_oauth_key --force --no-interaction`
 **depois** de restaurar `config_db.php`, e re-extraia os arquivos para
 `lab/` com cuidado para não sobrescrever o arquivo por cima de si mesmo
