@@ -79,14 +79,21 @@ export async function criarCliente(config: ConfigCliente): Promise<Cliente> {
     return JSON.parse(texto) as T
   }
 
+  // GET nunca tem corpo — mandar Content-Type mesmo assim faz a v2 tentar
+  // interpretar um corpo vazio como JSON e devolver 400 "Corpo JSON
+  // inválido" (confirmado ao vivo na verificação de integridade da Task 7).
+  function cabecalhos(corpo: unknown): Record<string, string> {
+    return {
+      Authorization: `Bearer ${token}`,
+      Connection: 'close',
+      ...(corpo === undefined ? {} : { 'Content-Type': 'application/json' }),
+    }
+  }
+
   async function chamar<T>(metodo: string, caminho: string, corpo?: unknown): Promise<T> {
     const r = await buscar(`${raiz}/api.php/v2${caminho}`, {
       method: metodo,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Connection: 'close',
-      },
+      headers: cabecalhos(corpo),
       ...(corpo === undefined ? {} : { body: JSON.stringify(corpo) }),
     })
 
@@ -110,11 +117,7 @@ export async function criarCliente(config: ConfigCliente): Promise<Cliente> {
         // Repetir a requisição com o token novo
         const r2 = await buscar(`${raiz}/api.php/v2${caminho}`, {
           method: metodo,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            Connection: 'close',
-          },
+          headers: cabecalhos(corpo),
           ...(corpo === undefined ? {} : { body: JSON.stringify(corpo) }),
         })
 

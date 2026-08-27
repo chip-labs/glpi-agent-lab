@@ -40,6 +40,34 @@ describe('criarCliente', () => {
     expect(init.headers.Authorization).toBe('Bearer TOK')
   })
 
+  it('get não manda Content-Type — a v2 tenta ler corpo vazio como JSON e devolve 400', async () => {
+    // Confirmado ao vivo: GET com "Content-Type: application/json" e sem
+    // corpo faz a v2 responder 400 "Corpo JSON inválido".
+    const buscar = vi
+      .fn()
+      .mockResolvedValueOnce(respostaToken())
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
+
+    const cliente = await criarCliente({ ...CONFIG_BASE, buscar: buscar as unknown as typeof fetch })
+    await cliente.get('/Assistance/Ticket')
+
+    const [, init] = buscar.mock.calls[1]!
+    expect(init.headers['Content-Type']).toBeUndefined()
+  })
+
+  it('post manda Content-Type — tem corpo', async () => {
+    const buscar = vi
+      .fn()
+      .mockResolvedValueOnce(respostaToken())
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 1 }), { status: 201 }))
+
+    const cliente = await criarCliente({ ...CONFIG_BASE, buscar: buscar as unknown as typeof fetch })
+    await cliente.post('/Assistance/Ticket', { name: 'x' })
+
+    const [, init] = buscar.mock.calls[1]!
+    expect(init.headers['Content-Type']).toBe('application/json')
+  })
+
   it('aceita HTTP 206 como sucesso — a v2 pagina com 206', async () => {
     const buscar = vi
       .fn()
