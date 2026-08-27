@@ -29,6 +29,7 @@ services:
         condition: service_healthy
     volumes:
       - glpi-files:/var/www/glpi/files
+      - ./glpicrypt.key:/var/www/glpi/config/glpicrypt.key
 
 volumes:
   db-data:

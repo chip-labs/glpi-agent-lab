@@ -27,7 +27,7 @@ RUN curl -fsSL \
 ENV APACHE_DOCUMENT_ROOT=/var/www/glpi/public
 RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
       /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf \
-    && printf '<Directory /var/www/glpi/public>\n  AllowOverride All\n  Require all granted\n</Directory>\n' \
+    && printf '<Directory /var/www/glpi/public>\n  AllowOverride All\n  Require all granted\n  RewriteEngine On\n  RewriteCond %%{REQUEST_FILENAME} !-f\n  RewriteRule ^(.*)$ index.php [QSA,L]\n</Directory>\n' \
        > /etc/apache2/conf-available/glpi.conf \
     && a2enconf glpi
 
